@@ -1,0 +1,74 @@
+---
+- name: Powering On Controllers
+  hosts: localhost:controllers
+  gather_facts: false
+  any_errors_fatal: true
+  tasks:
+    - name: Checking power state for controller nodes
+      shell: source /home/stack/stackrc; openstack baremetal node list -f value | awk '{ if( $2 ~ "controller" && $5 == "off" && $6 == "active") { print $5 }}'  | wc -l
+      register: controller_state
+      changed_when: false
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail if partial outage or not full power outage of controllers
+      fail:
+        msg: This does not seem to be a complete power outage. Some controller nodes are reporting on!
+      when: controller_state.stdout|int < controller_host_count|int 
+      delegate_to: localhost
+      run_once: true
+
+    - debug:
+        msg: All Controller nodes were powered off. Preparing to power on
+      when: controller_state.stdout|int == controller_host_count|int
+      delegate_to: localhost
+      run_once: true
+
+    - shell: source /home/stack/stackrc ; openstack baremetal node list -f value | awk '{ if( $2 ~ "controller" && $5 == "off" && $6 == "active") { print $2 }}'
+      register: controller_nodes
+      changed_when: false
+      delegate_to: localhost
+      run_once: true
+
+    - name: Powering on Controller nodes
+      shell: source /home/stack/stackrc ; openstack baremetal node power on "{{ item }}"
+      with_items: "{{ controller_nodes.stdout_lines }}"
+      when: controller_nodes.stdout_lines | length > 0
+      delegate_to: localhost
+      run_once: true
+
+    - name: "Pausing for {{ start_pause_seconds }} seconds to allow controllers to power up / initialize"
+      pause:
+        seconds: "{{ start_pause_seconds }}"
+
+    - name: Get status of controller nodes after power-on in Ironic
+      shell: source /home/stack/stackrc ; openstack baremetal node list -f value | awk '{ if( $2 ~ "controller" && $6 == "active") { print $2" ==> "$5 }}'
+      register: node_status
+      changed_when: false
+      delegate_to: localhost
+      run_once: true
+
+    - name: Current status of controller nodes
+      debug:
+        msg: "{{ item }}"
+      loop: "{{ node_status.stdout_lines }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Ensure that controller nodes are up  and responsive
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+      when: inventory_hostname in groups['controllers']
+
+    - name: Get Pacemaker Cluster State
+      pacemaker_cluster:
+        state: online
+      register: pcs_state
+      when: inventory_hostname in groups['controllers']
+      
+    - name: Pacemaker Cluster State Result
+      debug:
+        msg: "OK: Node: {{ inventory_hostname }} is: ONLINE!"
+      when: inventory_hostname in groups['controllers'] and pcs_state.out == "online"
+

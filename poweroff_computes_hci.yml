@@ -1,0 +1,38 @@
+# This playbook powers off all computes that are active and on in
+# Ironic. This is NOT a graceful operation and is used to facilitate
+# the testing of the power-on playbooks in the event of a power outage.
+# affecting the entire cluster.
+#
+
+---
+- name: Powering Off Computes
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create list of compute nodes that are powered on and active in Ironic 
+      shell: source /home/stack/stackrc ; openstack baremetal node list -f value | awk '{ if( $2 ~ "compute" && $5 == "on" && $6 == "active") { print $2 }}'
+      register: compute_nodes
+      changed_when: false
+     
+    - fail:
+        msg: "All nodes are already powered off"
+      when: compute_nodes.stdout_lines | length == 0
+
+    - name: Power off all compute nodes
+      shell: source /home/stack/stackrc ; openstack baremetal node power off "{{ item }}"
+      loop: "{{ compute_nodes.stdout_lines }}"
+      when: compute_nodes.stdout_lines | length > 0
+
+    - name: "Pausing for {{ stop_pause_seconds }} seconds to allow computes to power off."
+      pause:    
+        seconds: "{{ stop_pause_seconds }}"
+
+    - name: Get the status of compute nodes after power off
+      shell: source /home/stack/stackrc ; openstack baremetal node list -f value | awk '{ if( $2 ~ "compute" && $6 == "active") { print $2" ==> "$5 }}'
+      register: node_status
+      changed_when: false
+
+    - name: Current status of compute nodes
+      debug:
+        msg: '{{ node_status.stdout_lines }}'
+

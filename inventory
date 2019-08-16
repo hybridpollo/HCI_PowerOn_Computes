@@ -1,0 +1,14 @@
+# controller group
+[controllers]
+overcloud-controller-er801hci-0 ansible_host=172.22.0.13 ansible_user=heat-admin
+overcloud-controller-er801hci-1 ansible_host=172.22.0.23 ansible_user=heat-admin
+overcloud-controller-er801hci-2 ansible_host=172.22.0.11 ansible_user=heat-admin 
+
+# compute group
+[computes]
+overcloud-computehci-er801hci-0 ansible_host=172.22.0.35 ansible_user=heat-admin
+overcloud-computehci-er801hci-1 ansible_host=172.22.0.14 ansible_user=heat-admin
+overcloud-computehci-er801hci-2 ansible_host=172.22.0.32 ansible_user=heat-admin
+overcloud-computehci-er801hci-3 ansible_host=172.22.0.15 ansible_user=heat-admin
+overcloud-computehci-er801hci-4 ansible_host=172.22.0.29 ansible_user=heat-admin
+overcloud-computehci-er801hci-5 ansible_host=172.22.0.17 ansible_user=heat-admin 

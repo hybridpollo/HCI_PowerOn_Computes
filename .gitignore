@@ -1,0 +1,5 @@
+*.retry
+*.git
+*.log
+ansible-cache
+ansible-errors.json

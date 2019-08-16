@@ -1,0 +1,8 @@
+---
+# seconds to wait between pause tasks
+start_pause_seconds: 600
+stop_pause_seconds: 60
+
+# Defines the number of hosts from inventory
+compute_host_count: "{{ groups['computes'] | length }}"
+controller_host_count: "{{ groups['controllers'] | length }}"
