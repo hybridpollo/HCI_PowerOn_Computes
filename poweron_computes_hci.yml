@@ -24,7 +24,7 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Ensure that controller nodes are up 
+    - name: Ensure that controller nodes are up
       wait_for:
         host: "{{ inventory_hostname }}"
         port: 22
@@ -35,7 +35,7 @@
         state: online
       when: inventory_hostname in groups['controllers']
       register: pcs_state
-      
+
     - name: Pacemaker cluster state result
       debug:
         msg: "OK: Node: {{ inventory_hostname }} is: ONLINE!"
@@ -47,12 +47,12 @@
       when: inventory_hostname in groups['controllers'] and pcs_state.out != "online"
 
     - name: Getting Ceph mon quorum state
-      shell: /bin/ceph mon_status | jq '.quorum[]' | wc -l 
+      shell: /bin/ceph mon_status | jq '.quorum[]' | wc -l
       when: inventory_hostname in groups['controllers'][0]
       register: ceph_mon_status
       changed_when: false
 
-    - name: Fail if Ceph mons are not in quorum 
+    - name: Fail if Ceph mons are not in quorum
       fail:
         msg: "FAIL: Ceph monitors NOT in quorum. Expected: 3, Current: 3/{{ ceph_mon_status.stdout }}."
       when: inventory_hostname in groups['controllers'][0] and ceph_mon_status.stdout|int < 3|int
@@ -60,14 +60,14 @@
     - debug:
         msg: "OK: Ceph monitors in quorum. Expected: 3/3, Current 3/{{ ceph_mon_status.stdout }}."
       when: inventory_hostname in groups['controllers'][0] and ceph_mon_status.stdout|int == 3|int
-     
+
     - name: Getting the list of compute node names to be powewred on
       shell: source /home/stack/stackrc ; openstack baremetal node list -f value | awk '{ if( $2 ~ "compute" && $5 == "off" && $6 == "active") { print $2 }}'
       register: compute_nodes
       changed_when: false
       delegate_to: localhost
       run_once: true
-     
+
     - name: Powering on compute nodes
       shell: source /home/stack/stackrc ; openstack baremetal node power on "{{ item }}"
       with_items: "{{ compute_nodes.stdout_lines }}"
@@ -76,7 +76,7 @@
       run_once: true
 
     - name: "Pausing for {{ start_pause_seconds }} seconds to allow computes to power up / initialize."
-      pause:    
+      pause:
         seconds: "{{ start_pause_seconds }}"
 
     - name: Get the status of compute nodes after power on
@@ -94,14 +94,14 @@
       run_once: true
 
     - name: Get Ceph cluster status
-      shell: /bin/ceph health 
+      shell: /bin/ceph health
       when: inventory_hostname in groups['controllers'][0]
-      register: ceph_health 
+      register: ceph_health
       changed_when: false
       until: ceph_health.stdout == "HEALTH_OK"
       retries: 10
       delay: 60
- 
+
     - debug:
         msg: "Ceph cluster is healthy. Current status: {{ ceph_health.stdout }}. You may proceed to start virtual machines."
       when: inventory_hostname in groups['controllers'][0] and ceph_health.stdout == "HEALTH_OK"
