@@ -12,13 +12,18 @@ A power outage without any redudant infrastructure is a catastrophic event that 
 lead into loss of data on traditional computing systems. This is also true on complex, distributed private cloud platforms such as the Red Hat OpenStack Platform. It gets slightly more complex when you have a Hyper-converged system where the already complex cloud operating system is also serving as a software defined storage cluster such as the case in Ceph as the storage product in the OSP13 HCI product.
 
 
-## Pre-requisites
+
+## Key Scripts
+
+build_ansible_inventory.sh - Used to build the inventory for the entire environment.
+ipmi_actions.sh - Used to perform ipmi actions such as poweron or poweroff of the
+devices referenced in the script.
 
 
-## Files
 
 
-## How it works
+
+## How to use
 
 
 ![Power On Computes flowchart](https://github.com/hybridpollo/HCI_PowerOn_Computes/blob/master/HCI_Compute_PowerOn.png)

@@ -2,10 +2,14 @@
 # This script is used to bootstrap an ansible inventory
 # for the undercloud baremetal nodes that are active in Ironic 
 # used to set the base for the PowerOn/PowerOff Playbooks
+set -x
 
 # variables
 UNDERCLOUD_RC="/home/stack/stackrc"
 INVENTORY_OUTFILE="${PWD}/inventory"
+#
+CONTROL_HOST_STRING="controller"
+COMPUTE_HOST_STRING="compute"
 
 # source the rc file before any interaction with the script
 # require for the oscli client used in functions to work
@@ -17,7 +21,7 @@ echo -e "Adding active controllers to inventory."
 cat <<EOF > ${INVENTORY_OUTFILE}
 # controller group
 [controllers]
-$(openstack baremetal node list -c Name -c 'Instance UUID'  -c 'Power State' -c 'Provisioning State' -f value | awk '{ if( $1 ~ "controller" && $5 == "active") { print $2 }}' | while read bm_node_id ; do openstack server list -c ID -c Name -c Networks -f value | sed 's/ctlplane=/ansible_host=/g' | awk -v id=$bm_node_id '$0 ~ id { print $2, $3, "ansible_user=heat-admin" }' ; done) 
+$(openstack baremetal node list -c Name -c 'Instance UUID'  -c 'Power State' -c 'Provisioning State' -f value | awk -v string=${CONTROL_HOST_STRING} '{ if( $1 ~ string && $5 == "active") { print $2 }}' | while read bm_node_id ; do openstack server list -c ID -c Name -c Networks -f value | sed 's/ctlplane=/ansible_host=/g' | awk -v id=$bm_node_id '$0 ~ id { print $2, $3, "ansible_user=heat-admin" }' ; done) 
 EOF
 echo -e "Done adding controllers."
 }
@@ -28,7 +32,7 @@ cat <<EOF >> ${INVENTORY_OUTFILE}
 
 # compute group
 [computes]
-$(openstack baremetal node list -c Name -c 'Instance UUID'  -c 'Power State' -c 'Provisioning State' -f value | awk '{ if( $1 ~ "compute" && $5 == "active") { print $2 }}' | while read bm_node_id ; do openstack server list -c ID -c Name -c Networks -f value | sed 's/ctlplane=/ansible_host=/g' | awk -v id=$bm_node_id '$0 ~ id { print $2, $3, "ansible_user=heat-admin" }' ; done) 
+$(openstack baremetal node list -c Name -c 'Instance UUID'  -c 'Power State' -c 'Provisioning State' -f value | awk -v string=${COMPUTE_HOST_STRING} '{ if( $1 ~ string && $5 == "active") { print $2 }}' | while read bm_node_id ; do openstack server list -c ID -c Name -c Networks -f value | sed 's/ctlplane=/ansible_host=/g' | awk -v id=$bm_node_id '$0 ~ id { print $2, $3, "ansible_user=heat-admin" }' ; done) 
 EOF
 echo -e "Done adding computes."
 }
